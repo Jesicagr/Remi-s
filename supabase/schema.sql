@@ -79,6 +79,49 @@ create table if not exists asistencia (
 );
 
 -- ---------------------------------------------------------------------------
+-- Migraciones idempotentes
+-- Si las tablas ya existian (create table if not exists no agrega columnas),
+-- estas sentencias agregan lo que falte. Es seguro re-ejecutarlas.
+-- ---------------------------------------------------------------------------
+
+alter table chofer add column if not exists pct_chofer   numeric(5,4) not null default 0.6700;
+alter table turno  add column if not exists pactado       numeric(12,2);
+alter table turno  add column if not exists efectivo      numeric(12,2) not null default 0;
+alter table turno  add column if not exists transferencia numeric(12,2) not null default 0;
+alter table turno  add column if not exists bonos         numeric(12,2) not null default 0;
+
+-- Asegura el check de rango de pct_chofer.
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conrelid = 'public.chofer'::regclass
+      and conname = 'chofer_pct_chofer_check'
+  ) then
+    alter table public.chofer
+      add constraint chofer_pct_chofer_check check (pct_chofer > 0 and pct_chofer < 1);
+  end if;
+end $$;
+
+-- Actualiza el check de categorias de gasto para incluir 'gomeria'.
+do $$
+declare
+  c record;
+begin
+  for c in
+    select conname from pg_constraint
+    where conrelid = 'public.gasto'::regclass
+      and contype = 'c'
+      and pg_get_constraintdef(oid) ilike '%categoria%'
+  loop
+    execute format('alter table public.gasto drop constraint %I', c.conname);
+  end loop;
+  alter table public.gasto
+    add constraint gasto_categoria_check check (categoria in
+      ('combustible','gomeria','peajes','lavadero','mecanica','pinchadura','otros'));
+end $$;
+
+-- ---------------------------------------------------------------------------
 -- Perfil / rol del usuario autenticado
 -- ---------------------------------------------------------------------------
 
@@ -203,6 +246,13 @@ update perfil p
 set email = u.email
 from auth.users u
 where u.id = p.id and (p.email is null or p.email = '');
+
+-- Crea perfiles faltantes para usuarios que existían antes del trigger.
+insert into perfil (id, rol, nombre, email)
+select u.id, 'chofer', coalesce(u.email, ''), u.email
+from auth.users u
+left join perfil p on p.id = u.id
+where p.id is null;
 
 -- El PRIMER dueño debe marcarse a mano (una sola vez). Reemplazá el email:
 --   update perfil set rol = 'duenio'

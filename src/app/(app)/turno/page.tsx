@@ -1,5 +1,6 @@
 import { connection } from "next/server";
 import { getDataset } from "@/lib/data";
+import { getSesion } from "@/lib/perfil";
 import {
   gastosPorTurno,
   indicadoresTurno,
@@ -22,19 +23,25 @@ export const instant = false;
 
 export default async function TurnoPage() {
   await connection();
-  const ds = await getDataset();
+  const [ds, sesion] = await Promise.all([getDataset(), getSesion()]);
   const gxT = gastosPorTurno(ds.gastos);
 
-  const turnos = [...ds.turnos].sort((a, b) =>
-    a.fecha === b.fecha ? b.id - a.id : b.fecha.localeCompare(a.fecha)
-  );
+  const esChofer = sesion.rol === "chofer" && sesion.chofer_id != null;
+
+  const turnos = [...ds.turnos]
+    .filter((x) => !esChofer || x.chofer_id === sesion.chofer_id)
+    .sort((a, b) =>
+      a.fecha === b.fecha ? b.id - a.id : b.fecha.localeCompare(a.fecha)
+    );
   const t = turnos[0];
 
   if (!t) {
     return (
       <Card>
         <p className="text-body-md text-on-surface-variant">
-          No hay turnos cargados todavía.
+          {esChofer
+            ? "Todavía no cargaste ningún turno."
+            : "No hay turnos cargados todavía."}
         </p>
       </Card>
     );
@@ -51,7 +58,7 @@ export default async function TurnoPage() {
     <div className="max-w-lg mx-auto space-y-space-md">
       <div className="flex items-center justify-between">
         <h1 className="text-headline-lg font-bold text-on-surface tracking-tight">
-          Turno Activo
+          {esChofer ? "Mi Último Turno" : "Último Turno Cargado"}
         </h1>
         <span className="text-label-sm text-on-surface-variant bg-surface-container-low px-space-md py-space-xs rounded-lg border border-outline-variant flex items-center gap-1">
           <Icon name="calendar_today" className="text-[16px] text-primary" />

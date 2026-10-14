@@ -8,10 +8,11 @@ import type { Rol } from "@/lib/types";
 
 const NAV: { href: string; label: string; icon: string; roles: Rol[] }[] = [
   { href: "/cargar", label: "Cargar", icon: "edit_note", roles: ["chofer", "duenio"] },
-  { href: "/turno", label: "Turno", icon: "schedule", roles: ["chofer", "duenio"] },
-  { href: "/recaudacion", label: "Recaudación", icon: "payments", roles: ["duenio"] },
+  { href: "/turno", label: "Mi turno", icon: "schedule", roles: ["chofer"] },
+  { href: "/recaudacion", label: "Métricas", icon: "insights", roles: ["duenio"] },
   { href: "/gastos", label: "Gastos", icon: "local_gas_station", roles: ["duenio"] },
   { href: "/choferes", label: "Choferes", icon: "badge", roles: ["duenio"] },
+  { href: "/equipo", label: "Equipo", icon: "groups", roles: ["duenio"] },
 ];
 
 export function AppShell({
@@ -56,19 +57,6 @@ export function AppShell({
               <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
               {nombre ?? (rol === "duenio" ? "Dueño" : "Chofer")}
             </span>
-            {rol === "duenio" && (
-              <Link
-                href="/equipo"
-                title="Equipo"
-                className={`p-1.5 rounded-lg transition-colors ${
-                  pathname === "/equipo"
-                    ? "text-primary bg-surface-container-high"
-                    : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container"
-                }`}
-              >
-                <Icon name="admin_panel_settings" />
-              </Link>
-            )}
             {isSupabaseConfigured() && (
               <button
                 onClick={logout}

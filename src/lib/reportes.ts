@@ -111,6 +111,29 @@ export function resumenTotal(ds: Dataset): Resumen {
   return acc;
 }
 
+/** Fecha del turno mas reciente (para anclar los periodos). */
+export function fechaReferencia(ds: Dataset): string {
+  let max = "";
+  for (const t of ds.turnos) if (t.fecha > max) max = t.fecha;
+  if (max) return max;
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+/** Agrega los turnos dentro de [desde, hasta] (fechas ISO inclusivas). */
+export function resumenRango(ds: Dataset, desde: string, hasta: string): Resumen {
+  const gxT = gastosPorTurno(ds.gastos);
+  const acc = vacio();
+  for (const t of ds.turnos) {
+    if (t.fecha < desde || t.fecha > hasta) continue;
+    acumular(acc, t, gxT.get(t.id) ?? [], pctChofer(ds, t.chofer_id));
+  }
+  return acc;
+}
+
 export function resumenPorDia(ds: Dataset): { clave: string; resumen: Resumen }[] {
   const gxT = gastosPorTurno(ds.gastos);
   const map = new Map<string, Resumen>();
