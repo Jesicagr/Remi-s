@@ -2,6 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
+import { createAdminClient, isAdminConfigured } from "@/lib/supabase/admin";
+import {
+  asistenciaDeTurno,
+  combinarAsistencia,
+  type MarcaAsistencia,
+} from "@/lib/asistencia";
 import { esFechaISO, fechaEsFutura, hoyISO } from "@/lib/fechas";
 import type { TipoTurno } from "@/lib/types";
 
@@ -35,6 +41,42 @@ export interface CrearTurnoInput {
 export interface CrearTurnoResult {
   ok: boolean;
   error?: string;
+}
+
+/**
+ * Registra la asistencia del dia derivada del turno. Es idempotente: si ya
+ * habia asistencia ese dia, la combina. No falla el guardado del turno si la
+ * asistencia no se puede escribir.
+ */
+async function registrarAsistencia(
+  choferId: number,
+  fecha: string,
+  tipo: TipoTurno,
+  horaInicio: string | null
+) {
+  if (!isAdminConfigured()) return;
+  try {
+    const admin = createAdminClient();
+    const marca = asistenciaDeTurno(tipo, horaInicio);
+    const { data: prev } = await admin
+      .from("asistencia")
+      .select("asis1,asis2,asis1_hora,asis2_hora")
+      .eq("chofer_id", choferId)
+      .eq("fecha", fecha)
+      .maybeSingle();
+    const combinada = combinarAsistencia(
+      (prev as MarcaAsistencia | null) ?? null,
+      marca
+    );
+    await admin
+      .from("asistencia")
+      .upsert(
+        { chofer_id: choferId, fecha, ...combinada },
+        { onConflict: "chofer_id,fecha" }
+      );
+  } catch (e) {
+    console.error("No se pudo registrar la asistencia:", e);
+  }
 }
 
 export async function crearTurno(
@@ -112,6 +154,13 @@ export async function crearTurno(
     const { error: gastoError } = await supabase.from("gasto").insert(gastos);
     if (gastoError) return { ok: false, error: gastoError.message };
   }
+
+  await registrarAsistencia(
+    input.chofer_id,
+    input.fecha,
+    input.tipo,
+    input.hora_inicio
+  );
 
   revalidatePath("/turno");
   revalidatePath("/recaudacion");
