@@ -55,21 +55,21 @@ export default async function ChoferesPage() {
           icon="payments"
         />
         <Kpi
-          label="Choferes (67%)"
+          label="Remuneración Choferes"
           value={money(rMes.parte_chofer)}
           sub="A liquidar a los choferes"
           icon="badge"
           tone="tertiary"
         />
         <Kpi
-          label="Dueño (33%)"
+          label="Comisión Dueño"
           value={money(rMes.monto_33)}
           sub="Comisión de la central"
           icon="pie_chart"
           tone="primary"
         />
         <Kpi
-          label="Diezmo (10% del 33%)"
+          label="Diezmo (10% comisión)"
           value={money(rMes.diezmo)}
           sub={`Neto dueño ${money(rMes.duenio_neto)}`}
           icon="corporate_fare"
@@ -87,8 +87,8 @@ export default async function ChoferesPage() {
                 <th className="py-2">Chofer</th>
                 <th className="py-2 text-right">Turnos</th>
                 <th className="py-2 text-right">Recaudación</th>
-                <th className="py-2 text-right">Neto 67%</th>
-                <th className="py-2 text-right">Dueño 33%</th>
+                <th className="py-2 text-right">Neto chofer</th>
+                <th className="py-2 text-right">Comisión dueño</th>
                 <th className="py-2 text-right">Diezmo</th>
                 <th className="py-2 text-right">Neto dueño</th>
               </tr>
@@ -208,13 +208,13 @@ export default async function ChoferesPage() {
                   <span className="font-semibold">{money(r?.recaudacion ?? 0)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-on-surface-variant">Neto chofer (67%)</span>
+                  <span className="text-on-surface-variant">Neto chofer</span>
                   <span className="font-semibold text-tertiary">
                     {money(r?.parte_chofer ?? 0)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-on-surface-variant">Dueño 33%</span>
+                  <span className="text-on-surface-variant">Comisión dueño</span>
                   <span className="font-semibold">{money(r?.monto_33 ?? 0)}</span>
                 </div>
                 <div className="flex justify-between">

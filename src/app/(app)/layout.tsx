@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { AppShell } from "@/components/AppShell";
-import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
+import { getSesion } from "@/lib/perfil";
 
 export const instant = false;
 
@@ -12,15 +12,13 @@ export default async function AppLayout({
 }) {
   await connection();
 
-  const configured = isSupabaseConfigured();
+  const sesion = await getSesion();
 
-  if (configured) {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) redirect("/login");
-  }
+  if (!sesion.demo && !sesion.autenticado) redirect("/login");
 
-  return <AppShell demo={!configured}>{children}</AppShell>;
+  return (
+    <AppShell demo={sesion.demo} rol={sesion.rol} nombre={sesion.nombre}>
+      {children}
+    </AppShell>
+  );
 }

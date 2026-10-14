@@ -11,7 +11,14 @@ import {
   demoVehiculos,
 } from "./demo";
 import { createClient, isSupabaseConfigured } from "./supabase/server";
-import type { Asistencia, Chofer, Gasto, Turno, Vehiculo } from "./types";
+import type {
+  Asistencia,
+  Chofer,
+  Gasto,
+  Perfil,
+  Turno,
+  Vehiculo,
+} from "./types";
 
 export interface Dataset {
   choferes: Chofer[];
@@ -63,5 +70,18 @@ export async function getDataset(): Promise<Dataset> {
       asistencia: demoAsistencia,
       demo: true,
     };
+  }
+}
+
+/** Perfiles de usuario (solo el dueño puede listar todos por RLS). */
+export async function getPerfiles(): Promise<Perfil[]> {
+  if (!isSupabaseConfigured()) return [];
+
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase.from("perfil").select("*").order("email");
+    return (data ?? []) as Perfil[];
+  } catch {
+    return [];
   }
 }

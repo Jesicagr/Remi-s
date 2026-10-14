@@ -4,6 +4,7 @@ import {
   gastosPorTurno,
   indicadoresTurno,
   nombreChofer,
+  pctChofer,
   vehiculoChofer,
 } from "@/lib/reportes";
 import {
@@ -40,9 +41,11 @@ export default async function TurnoPage() {
   }
 
   const gastos = gxT.get(t.id) ?? [];
-  const ind = indicadoresTurno(t, gastos);
+  const pct = pctChofer(ds, t.chofer_id);
+  const ind = indicadoresTurno(t, gastos, pct);
   const veh = vehiculoChofer(ds, t.chofer_id);
   const chofer = nombreChofer(ds, t.chofer_id);
+  const pctLabel = `${Math.round(pct * 100)}%`;
 
   return (
     <div className="max-w-lg mx-auto space-y-space-md">
@@ -140,7 +143,7 @@ export default async function TurnoPage() {
             </h2>
           </div>
           <span className="bg-tertiary-container/20 text-tertiary border border-tertiary/30 px-2 py-0.5 rounded text-label-sm tabular-nums">
-            Dueño 33% / Chofer 67%
+            Chofer {pctLabel} / Dueño {Math.round((1 - pct) * 100)}%
           </span>
         </div>
 
@@ -158,19 +161,52 @@ export default async function TurnoPage() {
           </span>
         </div>
 
+        {t.pactado !== null && ind.diferencia_pactado !== null && (
+          <div className="bg-surface-container-low border border-outline-variant p-space-md rounded grid grid-cols-3 gap-space-xs text-center tabular-nums">
+            <div>
+              <span className="text-label-sm text-on-surface-variant block">
+                Pactado
+              </span>
+              <span className="text-body-lg font-semibold text-on-surface">
+                {money(t.pactado)}
+              </span>
+            </div>
+            <div>
+              <span className="text-label-sm text-on-surface-variant block">
+                Recaudado
+              </span>
+              <span className="text-body-lg font-semibold text-on-surface">
+                {money(t.recaudacion)}
+              </span>
+            </div>
+            <div>
+              <span className="text-label-sm text-on-surface-variant block">
+                Diferencia
+              </span>
+              <span
+                className={`text-body-lg font-bold ${
+                  ind.diferencia_pactado >= 0 ? "text-primary" : "text-error"
+                }`}
+              >
+                {money(ind.diferencia_pactado)}
+              </span>
+            </div>
+          </div>
+        )}
+
         <div className="space-y-space-xs tabular-nums">
           <LiqRow
-            label="Neto Chofer (67%)"
+            label={`Neto Chofer (${pctLabel})`}
             value={ind.parte_chofer}
             dot="bg-tertiary"
           />
           <LiqRow
-            label="Comisión Dueño (33%)"
+            label={`Comisión Dueño (${Math.round((1 - pct) * 100)}%)`}
             value={ind.monto_33}
             dot="bg-primary"
           />
           <LiqRow
-            label="Diezmo / Retención (10% del 33%)"
+            label="Diezmo / Retención (10% de la comisión)"
             value={-ind.diezmo}
           />
           <LiqRow
@@ -179,6 +215,33 @@ export default async function TurnoPage() {
             highlight
           />
         </div>
+      </Card>
+
+      {/* Cobro del turno */}
+      <Card className="space-y-space-sm">
+        <div className="flex items-center justify-between border-b border-outline-variant/50 pb-space-xs">
+          <div className="flex items-center gap-1.5">
+            <Icon name="payments" className="text-primary text-xl" />
+            <h2 className="text-headline-sm font-bold text-on-surface">
+              Cobro del Turno
+            </h2>
+          </div>
+          <span className="text-label-md tabular-nums font-bold text-primary">
+            {money(ind.cobro_total)}
+          </span>
+        </div>
+        <div className="space-y-space-xs tabular-nums">
+          <LiqRow label="Efectivo" value={Number(t.efectivo ?? 0)} />
+          <LiqRow label="Transferencia" value={Number(t.transferencia ?? 0)} />
+          <LiqRow label="Bonos" value={Number(t.bonos ?? 0)} />
+          <LiqRow label="Total cobrado" value={ind.cobro_total} highlight />
+        </div>
+        {ind.cobro_total !== Number(t.recaudacion) && (
+          <p className="text-body-sm text-error">
+            El cobro ({money(ind.cobro_total)}) no coincide con la recaudación
+            ({money(t.recaudacion)}).
+          </p>
+        )}
       </Card>
 
       {/* Gastos del turno */}

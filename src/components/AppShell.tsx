@@ -4,23 +4,30 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Icon } from "./Icon";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import type { Rol } from "@/lib/types";
 
-const NAV = [
-  { href: "/turno", label: "Turno", icon: "schedule" },
-  { href: "/recaudacion", label: "Recaudación", icon: "payments" },
-  { href: "/gastos", label: "Gastos", icon: "local_gas_station" },
-  { href: "/choferes", label: "Choferes", icon: "badge" },
+const NAV: { href: string; label: string; icon: string; roles: Rol[] }[] = [
+  { href: "/cargar", label: "Cargar", icon: "edit_note", roles: ["chofer", "duenio"] },
+  { href: "/turno", label: "Turno", icon: "schedule", roles: ["chofer", "duenio"] },
+  { href: "/recaudacion", label: "Recaudación", icon: "payments", roles: ["duenio"] },
+  { href: "/gastos", label: "Gastos", icon: "local_gas_station", roles: ["duenio"] },
+  { href: "/choferes", label: "Choferes", icon: "badge", roles: ["duenio"] },
 ];
 
 export function AppShell({
   children,
   demo,
+  rol,
+  nombre,
 }: {
   children: React.ReactNode;
   demo: boolean;
+  rol: Rol;
+  nombre: string | null;
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const nav = NAV.filter((item) => item.roles.includes(rol));
 
   async function logout() {
     const supabase = createClient();
@@ -47,8 +54,21 @@ export function AppShell({
           <div className="flex items-center gap-space-sm">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container-high text-primary border border-primary/30 text-label-md font-semibold">
               <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-              Turno Mañana
+              {nombre ?? (rol === "duenio" ? "Dueño" : "Chofer")}
             </span>
+            {rol === "duenio" && (
+              <Link
+                href="/equipo"
+                title="Equipo"
+                className={`p-1.5 rounded-lg transition-colors ${
+                  pathname === "/equipo"
+                    ? "text-primary bg-surface-container-high"
+                    : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container"
+                }`}
+              >
+                <Icon name="admin_panel_settings" />
+              </Link>
+            )}
             {isSupabaseConfigured() && (
               <button
                 onClick={logout}
@@ -67,7 +87,7 @@ export function AppShell({
       </main>
 
       <nav className="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-gutter-mobile py-space-xs bg-surface-container-lowest shadow-2xl">
-        {NAV.map((item) => {
+        {nav.map((item) => {
           const active = pathname === item.href;
           return (
             <Link

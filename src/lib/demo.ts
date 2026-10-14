@@ -11,10 +11,10 @@ import type {
 } from "./types";
 
 export const demoChoferes: Chofer[] = [
-  { id: 1, nombre: "Carlos", apellido: "Giménez", telefono: "+54 11 5555-0001", activo: true },
-  { id: 2, nombre: "Martín", apellido: "Sosa", telefono: "+54 11 5555-0002", activo: true },
-  { id: 3, nombre: "Roberto", apellido: "Álvarez", telefono: "+54 11 5555-0003", activo: true },
-  { id: 4, nombre: "Lucía", apellido: "Vega", telefono: "+54 11 5555-0004", activo: true },
+  { id: 1, nombre: "Carlos", apellido: "Giménez", telefono: "+54 11 5555-0001", activo: true, pct_chofer: 0.67, user_id: null },
+  { id: 2, nombre: "Martín", apellido: "Sosa", telefono: "+54 11 5555-0002", activo: true, pct_chofer: 0.67, user_id: null },
+  { id: 3, nombre: "Roberto", apellido: "Álvarez", telefono: "+54 11 5555-0003", activo: true, pct_chofer: 0.6, user_id: null },
+  { id: 4, nombre: "Lucía", apellido: "Vega", telefono: "+54 11 5555-0004", activo: true, pct_chofer: 0.7, user_id: null },
 ];
 
 export const demoVehiculos: Vehiculo[] = [
@@ -52,6 +52,10 @@ for (let dia = 1; dia <= 11; dia++) {
     const km_ocupados = 80 + Math.floor(rnd() * 60);
     const km_libres = 25 + Math.floor(rnd() * 40);
     const recaudacion = 38000 + Math.floor(rnd() * 26000);
+    const pactado = 42000 + Math.floor(rnd() * 8000);
+    const transferencia = Math.floor(recaudacion * (0.15 + rnd() * 0.2));
+    const bonos = Math.floor(recaudacion * (rnd() * 0.12));
+    const efectivo = recaudacion - transferencia - bonos;
     turnoId += 1;
     turnosDemo.push({
       id: turnoId,
@@ -65,6 +69,11 @@ for (let dia = 1; dia <= 11; dia++) {
       km_ocupados,
       cantidad_viajes: viajes,
       recaudacion,
+      pactado,
+      efectivo,
+      transferencia,
+      bonos,
+      creado_en: `2026-10-${String(dia).padStart(2, "0")}T12:00:00Z`,
     });
 
     // combustible casi todos los dias
@@ -80,6 +89,21 @@ for (let dia = 1; dia <= 11; dia++) {
       detalle: rnd() > 0.5 ? "Nafta YPF" : "GNC",
       creado_en: `2026-10-${String(dia).padStart(2, "0")}T09:00:00Z`,
     });
+
+    if (rnd() > 0.7) {
+      gastoId += 1;
+      gastosDemo.push({
+        id: gastoId,
+        turno_id: turnoId,
+        categoria: "gomeria",
+        monto: 1200 + Math.floor(rnd() * 3800),
+        litros: null,
+        numero_ticket: `G-${7000 + gastoId}`,
+        comprobante_url: null,
+        detalle: "Gomería / repuestos",
+        creado_en: `2026-10-${String(dia).padStart(2, "0")}T09:30:00Z`,
+      });
+    }
 
     if (rnd() > 0.6) {
       gastoId += 1;

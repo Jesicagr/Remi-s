@@ -4,8 +4,11 @@
 
 export type TipoTurno = "manana" | "tarde" | "noche" | "dia";
 
+export type Rol = "chofer" | "duenio";
+
 export type CategoriaGasto =
   | "combustible"
+  | "gomeria"
   | "peajes"
   | "lavadero"
   | "mecanica"
@@ -18,6 +21,18 @@ export interface Chofer {
   apellido: string | null;
   telefono: string | null;
   activo: boolean;
+  /** Porcentaje de la recaudación que le corresponde al chofer (0..1). */
+  pct_chofer: number;
+  /** Usuario de Supabase Auth asociado (opcional). */
+  user_id: string | null;
+}
+
+export interface Perfil {
+  id: string; // auth.users.id
+  rol: Rol;
+  chofer_id: number | null;
+  nombre: string | null;
+  email: string | null;
 }
 
 export interface Vehiculo {
@@ -41,6 +56,13 @@ export interface Turno {
   km_ocupados: number;
   cantidad_viajes: number;
   recaudacion: number;
+  /** Monto acordado del turno ("pactado"). Null si no aplica. */
+  pactado: number | null;
+  /** Desglose del cobro. */
+  efectivo: number;
+  transferencia: number;
+  bonos: number;
+  creado_en: string | null;
 }
 
 export interface Gasto {
@@ -65,15 +87,19 @@ export interface Asistencia {
   asis2_hora: string | null;
 }
 
-// --- Indicadores calculados (regla: dueño 33% / chofer 67%, diezmo 10% del 33%) ---
+// --- Indicadores calculados (regla: % chofer configurable, resto dueño,
+//     diezmo 10% de la parte del dueño) ---
 
 export interface IndicadoresTurno {
-  parte_chofer: number; // 67%
-  monto_33: number; // 33% -> dueño
-  diezmo: number; // 10% del 33%
-  duenio_neto: number; // 33% - diezmo
+  parte_chofer: number; // % del chofer
+  monto_33: number; // parte del dueño
+  diezmo: number; // 10% de la parte del dueño
+  duenio_neto: number; // parte dueño - diezmo
   gasto_combustible: number;
+  gasto_gomeria: number;
   gasto_otros: number;
   gasto_total: number;
   duenio_utilidad: number; // duenio_neto - gastos
+  cobro_total: number; // efectivo + transferencia + bonos
+  diferencia_pactado: number | null; // recaudacion - pactado
 }

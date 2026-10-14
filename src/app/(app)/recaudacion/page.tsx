@@ -52,14 +52,14 @@ export default async function RecaudacionPage() {
           icon="account_balance_wallet"
         />
         <Kpi
-          label="Comisión Dueño (33%) Acum."
+          label="Comisión Dueño Acum."
           value={money(rMes.monto_33)}
-          sub="33% de la recaudación"
+          sub="Parte del dueño de la recaudación"
           icon="pie_chart"
           tone="primary"
         />
         <Kpi
-          label="Diezmo Central (10% del 33%)"
+          label="Diezmo Central (10% comisión)"
           value={money(rMes.diezmo)}
           sub="Retención de administración"
           icon="corporate_fare"
@@ -149,7 +149,7 @@ export default async function RecaudacionPage() {
                 </div>
                 <div className="flex items-center justify-between text-body-sm text-on-surface-variant mb-2">
                   <span>
-                    Dueño 33%:{" "}
+                    Dueño:{" "}
                     <strong className="text-tertiary font-mono">
                       {money(t.resumen.monto_33)}
                     </strong>
@@ -166,7 +166,7 @@ export default async function RecaudacionPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-space-md">
         {/* Detalle diario */}
         <Card>
-          <SectionTitle icon="view_list">Detalle Diario &amp; Retención 33%</SectionTitle>
+          <SectionTitle icon="view_list">Detalle Diario &amp; Comisión Dueño</SectionTitle>
           <div className="space-y-space-xs">
             {porDia.slice(0, 8).map((d) => (
               <div
@@ -186,7 +186,7 @@ export default async function RecaudacionPage() {
                     {money(d.resumen.recaudacion)}
                   </div>
                   <div className="text-body-sm text-tertiary font-mono">
-                    Dueño 33%: <strong>{money(d.resumen.monto_33)}</strong>
+                    Dueño: <strong>{money(d.resumen.monto_33)}</strong>
                   </div>
                 </div>
               </div>
@@ -213,14 +213,14 @@ export default async function RecaudacionPage() {
                 Otros
               </div>
               <div className="text-headline-sm font-bold tabular-nums">
-                {money(rMes.gasto_otros)}
+                {money(rMes.gasto_otros + rMes.gasto_gomeria)}
               </div>
             </div>
           </div>
           <div className="space-y-space-xs tabular-nums">
             <LiqRow label="Recaudación bruta" value={rMes.recaudacion} />
-            <LiqRow label="Comisión dueño (33%)" value={rMes.monto_33} dot="bg-primary" />
-            <LiqRow label="Diezmo (10% del 33%)" value={-rMes.diezmo} />
+            <LiqRow label="Comisión dueño" value={rMes.monto_33} dot="bg-primary" />
+            <LiqRow label="Diezmo (10% de la comisión)" value={-rMes.diezmo} />
             <LiqRow label="Gastos del mes" value={-rMes.gasto_total} />
             <LiqRow label="Utilidad dueño" value={rMes.duenio_utilidad} highlight />
           </div>
@@ -236,8 +236,8 @@ export default async function RecaudacionPage() {
               <tr className="text-on-surface-variant text-label-sm text-left">
                 <th className="py-2">Mes</th>
                 <th className="py-2 text-right">Recaudación</th>
-                <th className="py-2 text-right">Chofer 67%</th>
-                <th className="py-2 text-right">Dueño 33%</th>
+                <th className="py-2 text-right">Chofer</th>
+                <th className="py-2 text-right">Comisión dueño</th>
                 <th className="py-2 text-right">Diezmo</th>
                 <th className="py-2 text-right">Gastos</th>
                 <th className="py-2 text-right">Utilidad dueño</th>

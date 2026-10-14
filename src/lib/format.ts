@@ -1,6 +1,7 @@
 // ===========================================================================
 // AppRemi - Formato y calculos de negocio
-// Regla: DUENIO 33% / CHOFER 67%, diezmo 10% del 33% (duenio),
+// Regla: % chofer configurable por chofer (default 67%), resto dueño,
+//        diezmo 10% de la parte del duenio,
 //        gastos se descuentan de la parte del duenio.
 // ===========================================================================
 
@@ -12,6 +13,7 @@ export const PCT_DIEZMO = 0.1;
 
 export const catLabels: Record<Gasto["categoria"], string> = {
   combustible: "Combustible",
+  gomeria: "Gomería - Repuestos",
   peajes: "Peajes",
   lavadero: "Lavadero",
   mecanica: "Mecánica",
@@ -21,6 +23,7 @@ export const catLabels: Record<Gasto["categoria"], string> = {
 
 export const catIcon: Record<Gasto["categoria"], string> = {
   combustible: "local_gas_station",
+  gomeria: "construction",
   peajes: "toll",
   lavadero: "local_car_wash",
   mecanica: "car_repair",
@@ -77,22 +80,27 @@ export function r2(n: number): number {
 /** Calcula los indicadores de un turno a partir de la recaudacion y sus gastos. */
 export function calcular(
   recaudacion: number,
-  gastos: Pick<Gasto, "categoria" | "monto">[] = []
+  gastos: Pick<Gasto, "categoria" | "monto">[] = [],
+  pct_chofer: number = PCT_CHOFER
 ) {
-  const parte_chofer = r2(recaudacion * PCT_CHOFER);
-  const monto_33 = r2(recaudacion * PCT_DUENIO);
+  const pct = pct_chofer > 0 && pct_chofer < 1 ? pct_chofer : PCT_CHOFER;
+  const parte_chofer = r2(recaudacion * pct);
+  const monto_33 = r2(recaudacion * (1 - pct));
   const diezmo = r2(monto_33 * PCT_DIEZMO);
   const duenio_neto = r2(monto_33 - diezmo);
 
   let gasto_combustible = 0;
+  let gasto_gomeria = 0;
   let gasto_otros = 0;
   for (const g of gastos) {
     if (g.categoria === "combustible") gasto_combustible += Number(g.monto);
+    else if (g.categoria === "gomeria") gasto_gomeria += Number(g.monto);
     else gasto_otros += Number(g.monto);
   }
   gasto_combustible = r2(gasto_combustible);
+  gasto_gomeria = r2(gasto_gomeria);
   gasto_otros = r2(gasto_otros);
-  const gasto_total = r2(gasto_combustible + gasto_otros);
+  const gasto_total = r2(gasto_combustible + gasto_gomeria + gasto_otros);
   const duenio_utilidad = r2(duenio_neto - gasto_total);
 
   return {
@@ -101,6 +109,7 @@ export function calcular(
     diezmo,
     duenio_neto,
     gasto_combustible,
+    gasto_gomeria,
     gasto_otros,
     gasto_total,
     duenio_utilidad,

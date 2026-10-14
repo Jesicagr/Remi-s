@@ -90,8 +90,8 @@ export default async function GastosPage() {
         />
         <Kpi
           label="Otros Gastos Mes"
-          value={money(rMes.gasto_otros)}
-          sub="Peajes, mecánica, lavadero…"
+          value={money(rMes.gasto_otros + rMes.gasto_gomeria)}
+          sub="Gomería, peajes, mecánica…"
           icon="build"
           tone="tertiary"
         />
