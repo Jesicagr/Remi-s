@@ -1,18 +1,11 @@
 import { connection } from "next/server";
 import { getDataset } from "@/lib/data";
 import { getSesion } from "@/lib/perfil";
+import { hoyISO } from "@/lib/fechas";
 import { CargarTurnoForm } from "@/components/CargarTurnoForm";
 import { Icon } from "@/components/Icon";
 
 export const instant = false;
-
-function hoyISO(): string {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
 
 export default async function CargarPage() {
   await connection();

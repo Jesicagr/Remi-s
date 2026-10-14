@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
+import { esFechaISO, fechaEsFutura, hoyISO } from "@/lib/fechas";
 import type { TipoTurno } from "@/lib/types";
 
 export interface CrearTurnoInput {
@@ -53,6 +54,13 @@ export async function crearTurno(
 
   if (!user) {
     return { ok: false, error: "Sesión expirada. Volvé a ingresar." };
+  }
+
+  if (!esFechaISO(input.fecha)) {
+    return { ok: false, error: "Fecha inválida." };
+  }
+  if (fechaEsFutura(input.fecha, hoyISO())) {
+    return { ok: false, error: "No se pueden cargar turnos con fecha futura." };
   }
 
   const { data: turno, error } = await supabase

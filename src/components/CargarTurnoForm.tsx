@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import { esFechaISO, fechaEsFutura } from "@/lib/fechas";
 import { Card, LiqRow, SectionTitle } from "./ui";
 import { Icon } from "./Icon";
 import { money, num } from "@/lib/format";
@@ -101,6 +102,14 @@ export function CargarTurnoForm({
       setMsg({ ok: false, text: "Seleccioná un chofer." });
       return;
     }
+    if (!esFechaISO(fecha)) {
+      setMsg({ ok: false, text: "Ingresá una fecha válida." });
+      return;
+    }
+    if (fechaEsFutura(fecha, hoy)) {
+      setMsg({ ok: false, text: "No se pueden cargar turnos con fecha futura." });
+      return;
+    }
     if (recNum <= 0) {
       setMsg({ ok: false, text: "Ingresá la recaudación del turno." });
       return;
@@ -181,14 +190,15 @@ export function CargarTurnoForm({
               ))}
             </select>
           </Field>
-          <Field label="Fecha">
-            <input
-              type="date"
-              className={inputCls}
-              value={fecha}
-              onChange={(e) => setFecha(e.target.value)}
-            />
-          </Field>
+            <Field label="Fecha" hint="No se pueden cargar fechas futuras">
+              <input
+                type="date"
+                max={hoy}
+                className={inputCls}
+                value={fecha}
+                onChange={(e) => setFecha(e.target.value)}
+              />
+            </Field>
           <Field label="Turno">
             <select
               className={inputCls}
