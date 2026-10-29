@@ -1,5 +1,6 @@
 import { connection } from "next/server";
-import { getDataset } from "@/lib/data";
+import { getDataset, getPeriodosCerrados } from "@/lib/data";
+import { getSesion } from "@/lib/perfil";
 import {
   fechaReferencia,
   resumenPorMes,
@@ -17,6 +18,7 @@ import { money, mesLabel, num, turnoLabel } from "@/lib/format";
 import { Bar, Card, Kpi, LiqRow, SectionTitle } from "@/components/ui";
 import { Icon } from "@/components/Icon";
 import { PeriodoTabs } from "@/components/PeriodoTabs";
+import { CerrarPeriodo } from "@/components/CerrarPeriodo";
 
 export const instant = false;
 
@@ -33,7 +35,12 @@ export default async function RecaudacionPage({
     ? (sp.p as Periodo)
     : "mes";
 
-  const ds = await getDataset();
+  const [ds, sesion, periodosCerrados] = await Promise.all([
+    getDataset(),
+    getSesion(),
+    getPeriodosCerrados(),
+  ]);
+  const puedeCerrar = sesion.rol === "duenio" && !sesion.demo;
   const ref = fechaReferencia(ds);
 
   const rango = rangoDePeriodo(periodo, ref);
@@ -321,6 +328,22 @@ export default async function RecaudacionPage({
           </table>
         </div>
       </Card>
+
+      {puedeCerrar && (
+        <Card>
+          <SectionTitle
+            icon="lock_clock"
+            right={
+              <span className="text-label-sm text-on-surface-variant tabular-nums">
+                {periodosCerrados.length} cerrado(s)
+              </span>
+            }
+          >
+            Cierre de Períodos
+          </SectionTitle>
+          <CerrarPeriodo periodos={periodosCerrados} />
+        </Card>
+      )}
     </div>
   );
 }

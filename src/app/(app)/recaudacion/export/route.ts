@@ -6,7 +6,7 @@ import {
   gastosPorTurno,
   indicadoresTurno,
   nombreChofer,
-  pctChofer,
+  pctTurno,
   resumenRango,
   type Resumen,
 } from "@/lib/reportes";
@@ -115,7 +115,7 @@ export async function GET(req: Request) {
     );
     filas.push(ENCABEZADO_TURNO);
     for (const t of turnos) {
-      const i = indicadoresTurno(t, gxT.get(t.id) ?? [], pctChofer(ds, t.chofer_id));
+      const i = indicadoresTurno(t, gxT.get(t.id) ?? [], pctTurno(ds, t));
       filas.push([
         t.fecha,
         t.tipo,

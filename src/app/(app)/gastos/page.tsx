@@ -1,5 +1,6 @@
 import { connection } from "next/server";
 import { getDataset } from "@/lib/data";
+import { getSesion } from "@/lib/perfil";
 import {
   gastosPorTurno,
   nombreChofer,
@@ -10,12 +11,14 @@ import { catIcon, catLabels, fecha, money, num } from "@/lib/format";
 import type { CategoriaGasto } from "@/lib/types";
 import { Bar, Card, Kpi, SectionTitle } from "@/components/ui";
 import { Icon } from "@/components/Icon";
+import { AnularRegistro } from "@/components/AnularRegistro";
 
 export const instant = false;
 
 export default async function GastosPage() {
   await connection();
-  const ds = await getDataset();
+  const [ds, sesion] = await Promise.all([getDataset(), getSesion()]);
+  const puedeAnular = sesion.rol === "duenio" && !sesion.demo;
   const total = resumenTotal(ds);
   const porMes = resumenPorMes(ds);
   const rMes = porMes[0]?.resumen ?? total;
@@ -236,6 +239,7 @@ export default async function GastosPage() {
                 <th className="py-2">Turno / Chofer</th>
                 <th className="py-2 text-right">Litros</th>
                 <th className="py-2 text-right">Monto</th>
+                {puedeAnular && <th className="py-2 text-right">Acciones</th>}
               </tr>
             </thead>
             <tbody>
@@ -264,6 +268,15 @@ export default async function GastosPage() {
                     <td className="py-2 text-right font-bold text-error">
                       {money(g.monto)}
                     </td>
+                    {puedeAnular && (
+                      <td className="py-2 text-right">
+                        <AnularRegistro
+                          tabla="gasto"
+                          registroId={g.id}
+                          etiqueta={`${catLabels[g.categoria]} · ${money(g.monto)}`}
+                        />
+                      </td>
+                    )}
                   </tr>
                 );
               })}

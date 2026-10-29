@@ -81,12 +81,14 @@ export function r2(n: number): number {
 export function calcular(
   recaudacion: number,
   gastos: Pick<Gasto, "categoria" | "monto">[] = [],
-  pct_chofer: number = PCT_CHOFER
+  pct_chofer: number = PCT_CHOFER,
+  pct_diezmo: number = PCT_DIEZMO
 ) {
   const pct = pct_chofer > 0 && pct_chofer < 1 ? pct_chofer : PCT_CHOFER;
+  const pctD = pct_diezmo >= 0 && pct_diezmo < 1 ? pct_diezmo : PCT_DIEZMO;
   const parte_chofer = r2(recaudacion * pct);
   const monto_33 = r2(recaudacion * (1 - pct));
-  const diezmo = r2(monto_33 * PCT_DIEZMO);
+  const diezmo = r2(monto_33 * pctD);
   const duenio_neto = r2(monto_33 - diezmo);
 
   let gasto_combustible = 0;

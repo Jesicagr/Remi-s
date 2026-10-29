@@ -7,6 +7,7 @@ import {
   indicadoresTurno,
   nombreChofer,
   pctChofer,
+  pctTurno,
   resumenPorChofer,
   resumenPorDia,
   resumenPorMes,
@@ -135,6 +136,7 @@ const ds: Dataset = {
   turnos,
   gastos,
   asistencia: [],
+  correcciones: [],
   demo: false,
 };
 
@@ -155,6 +157,25 @@ describe("pctChofer", () => {
 
   it("cae al default si el chofer no existe", () => {
     expect(pctChofer(ds, 99)).toBe(PCT_CHOFER);
+  });
+});
+
+describe("pctTurno (snapshot)", () => {
+  it("usa el % guardado en el turno aunque el chofer cambie después", () => {
+    const turnoConSnapshot: Turno = { ...turnos[0], pct_chofer: 0.6 };
+    expect(pctTurno(ds, turnoConSnapshot)).toBe(0.6);
+  });
+
+  it("cae al % actual del chofer si el turno es viejo y no tiene snapshot", () => {
+    expect(pctTurno(ds, turnos[0])).toBe(0.7);
+  });
+
+  it("las liquidaciones viejas no se recalculan al cambiar el % del chofer", () => {
+    const viejo: Turno = { ...turnos[0], pct_chofer: 0.6 };
+    const dsConSnapshot: Dataset = { ...ds, turnos: [viejo] };
+    const r = resumenTotal(dsConSnapshot);
+    expect(r.parte_chofer).toBe(600);
+    expect(r.monto_33).toBe(400);
   });
 });
 

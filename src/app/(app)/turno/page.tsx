@@ -1,11 +1,11 @@
 import { connection } from "next/server";
-import { getDataset } from "@/lib/data";
+import { getDataset, getEvidencias } from "@/lib/data";
 import { getSesion } from "@/lib/perfil";
 import {
   gastosPorTurno,
   indicadoresTurno,
   nombreChofer,
-  pctChofer,
+  pctTurno,
   vehiculoChofer,
 } from "@/lib/reportes";
 import {
@@ -16,10 +16,26 @@ import {
   num,
   turnoLabel,
 } from "@/lib/format";
-import { Card, KmBadge, LiqRow } from "@/components/ui";
+import { Card, KmBadge, LiqRow, SectionTitle } from "@/components/ui";
 import { Icon } from "@/components/Icon";
+import { AnularRegistro } from "@/components/AnularRegistro";
+import { SubirEvidencia } from "@/components/SubirEvidencia";
 
 export const instant = false;
+
+const evidenciaLabel: Record<string, string> = {
+  foto_tablero: "Foto del tablero",
+  ticket: "Ticket",
+  comprobante: "Comprobante",
+  firma: "Firma",
+  otro: "Otro",
+};
+
+function tamanoArchivo(bytes: number | null): string {
+  if (!bytes) return "";
+  if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+}
 
 export default async function TurnoPage() {
   await connection();
@@ -27,6 +43,8 @@ export default async function TurnoPage() {
   const gxT = gastosPorTurno(ds.gastos);
 
   const esChofer = sesion.rol === "chofer" && sesion.chofer_id != null;
+  const puedeAnular = sesion.rol === "duenio" && !sesion.demo;
+  const puedeSubir = !sesion.demo && (sesion.rol === "duenio" || esChofer);
 
   const turnos = [...ds.turnos]
     .filter((x) => !esChofer || x.chofer_id === sesion.chofer_id)
@@ -48,7 +66,8 @@ export default async function TurnoPage() {
   }
 
   const gastos = gxT.get(t.id) ?? [];
-  const pct = pctChofer(ds, t.chofer_id);
+  const evidencias = await getEvidencias(t.id);
+  const pct = pctTurno(ds, t);
   const ind = indicadoresTurno(t, gastos, pct);
   const veh = vehiculoChofer(ds, t.chofer_id);
   const chofer = nombreChofer(ds, t.chofer_id);
@@ -307,6 +326,74 @@ export default async function TurnoPage() {
         ))}
       </Card>
 
+      {/* Evidencias */}
+      {(evidencias.length > 0 || puedeSubir) && (
+        <Card className="space-y-space-sm">
+          <SectionTitle
+            icon="photo_camera"
+            right={
+              <span className="text-label-sm text-on-surface-variant tabular-nums">
+                {evidencias.length} archivo(s)
+              </span>
+            }
+          >
+            Evidencias del Turno
+          </SectionTitle>
+
+          {evidencias.length === 0 && (
+            <p className="text-body-sm text-on-surface-variant">
+              Todavía no hay fotos ni comprobantes adjuntos a este turno.
+            </p>
+          )}
+
+          <div className="space-y-space-xs">
+            {evidencias.map((e) => (
+              <a
+                key={e.id}
+                href={e.url ?? undefined}
+                target="_blank"
+                rel="noreferrer"
+                className={`flex items-center gap-2.5 rounded border border-outline-variant bg-surface-container-low p-space-sm transition hover:border-primary/50 ${
+                  e.url ? "" : "pointer-events-none opacity-60"
+                }`}
+              >
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded border border-outline-variant bg-surface-container-high">
+                  <Icon
+                    name={e.url ? "description" : "broken_image"}
+                    className="text-[18px] text-primary"
+                  />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-body-md font-semibold text-on-surface">
+                    {e.nombre_archivo ?? "Archivo"}
+                  </p>
+                  <p className="text-body-sm text-on-surface-variant">
+                    {evidenciaLabel[e.tipo] ?? e.tipo}
+                    {e.tamano_bytes ? ` • ${tamanoArchivo(e.tamano_bytes)}` : ""}
+                    {` • ${new Date(e.creado_en).toLocaleDateString("es-AR")}`}
+                  </p>
+                  {e.descripcion && (
+                    <p className="truncate text-body-sm text-on-surface-variant">
+                      {e.descripcion}
+                    </p>
+                  )}
+                </div>
+                <Icon
+                  name="open_in_new"
+                  className="text-[18px] text-on-surface-variant"
+                />
+              </a>
+            ))}
+          </div>
+
+          {puedeSubir && (
+            <div className="border-t border-outline-variant/50 pt-space-sm">
+              <SubirEvidencia turnoId={t.id} />
+            </div>
+          )}
+        </Card>
+      )}
+
       {/* Balance dueño */}
       <div className="bg-surface-container-high border-2 border-primary/50 p-space-md rounded-lg space-y-space-md">
         <div>
@@ -332,6 +419,27 @@ export default async function TurnoPage() {
           </div>
         </div>
       </div>
+
+      <Card className="flex items-center justify-between gap-space-sm">
+        <div className="flex items-start gap-2">
+          <Icon name="lock" className="text-[18px] text-on-surface-variant" />
+          <div>
+            <p className="text-body-sm font-semibold text-on-surface">
+              Registro inmutable
+            </p>
+            <p className="text-body-sm text-on-surface-variant">
+              Este turno queda como evidencia. No se edita ni se borra.
+            </p>
+          </div>
+        </div>
+        {puedeAnular && (
+          <AnularRegistro
+            tabla="turno"
+            registroId={t.id}
+            etiqueta={`${fecha(t.fecha)} · ${chofer}`}
+          />
+        )}
+      </Card>
     </div>
   );
 }

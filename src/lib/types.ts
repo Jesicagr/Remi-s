@@ -42,6 +42,8 @@ export interface Vehiculo {
   modelo: string | null;
   patente: string | null;
   chofer_id: number | null;
+  /** Baja lógica: no se borran vehículos con historial. */
+  activo?: boolean;
 }
 
 export interface Turno {
@@ -62,6 +64,12 @@ export interface Turno {
   efectivo: number;
   transferencia: number;
   bonos: number;
+  /** Snapshot del % del chofer al momento de cargar el turno. */
+  pct_chofer?: number | null;
+  /** Snapshot del % de diezmo al momento de cargar el turno. */
+  pct_diezmo?: number | null;
+  /** Usuario que registró el turno. */
+  registrado_por?: string | null;
   creado_en: string | null;
 }
 
@@ -85,6 +93,50 @@ export interface Asistencia {
   asis2: boolean;
   asis1_hora: string | null;
   asis2_hora: string | null;
+}
+
+export type TipoEvidencia =
+  | "foto_tablero"
+  | "ticket"
+  | "comprobante"
+  | "firma"
+  | "otro";
+
+/** Archivo adjunto a un turno/gasto. Inmutable, con hash de integridad. */
+export interface Evidencia {
+  id: number;
+  turno_id: number | null;
+  gasto_id: number | null;
+  tipo: TipoEvidencia;
+  storage_path: string;
+  nombre_archivo: string | null;
+  descripcion: string | null;
+  mime_type: string | null;
+  tamano_bytes: number | null;
+  sha256: string | null;
+  capturado_en: string;
+  registrado_por: string | null;
+  creado_en: string;
+}
+
+/** Mes cerrado: no se pueden cargar turnos/gastos con fecha dentro de él. */
+export interface PeriodoCerrado {
+  mes: string; // ISO date, siempre día 1
+  cerrado_por: string | null;
+  cerrado_en: string;
+  motivo: string | null;
+}
+
+/** Anulación o ajuste de un registro inmutable. */
+export interface Correccion {
+  id: number;
+  tabla: "turno" | "gasto" | "asistencia";
+  registro_id: number;
+  tipo: "anulacion" | "ajuste";
+  motivo: string;
+  datos: Record<string, unknown> | null;
+  creado_por: string | null;
+  creado_en: string;
 }
 
 // --- Indicadores calculados (regla: % chofer configurable, resto dueño,

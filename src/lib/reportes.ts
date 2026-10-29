@@ -66,8 +66,26 @@ export function pctChofer(ds: Dataset, choferId: number): number {
   return c?.pct_chofer ?? PCT_CHOFER;
 }
 
-export function indicadoresTurno(t: Turno, gastos: Gasto[], pct: number) {
-  const ind = calcular(Number(t.recaudacion), gastos, pct);
+/**
+ * % que corresponde al turno: usa el snapshot guardado al cargarlo. Si el
+ * turno es viejo y no tiene snapshot, cae al % actual del chofer.
+ */
+export function pctTurno(ds: Dataset, t: Turno): number {
+  const snap = Number(t.pct_chofer);
+  if (Number.isFinite(snap) && snap > 0 && snap < 1) return snap;
+  return pctChofer(ds, t.chofer_id);
+}
+
+export function indicadoresTurno(t: Turno, gastos: Gasto[], pct?: number) {
+  const snap = Number(t.pct_chofer);
+  const pctFinal =
+    pct ?? (Number.isFinite(snap) && snap > 0 && snap < 1 ? snap : PCT_CHOFER);
+  const snapDiezmo = Number(t.pct_diezmo);
+  const pctDiezmo =
+    Number.isFinite(snapDiezmo) && snapDiezmo >= 0 && snapDiezmo < 1
+      ? snapDiezmo
+      : undefined;
+  const ind = calcular(Number(t.recaudacion), gastos, pctFinal, pctDiezmo);
   const efectivo = Number(t.efectivo ?? 0);
   const transferencia = Number(t.transferencia ?? 0);
   const bonos = Number(t.bonos ?? 0);
@@ -107,7 +125,7 @@ export function resumenTotal(ds: Dataset): Resumen {
   const gxT = gastosPorTurno(ds.gastos);
   const acc = vacio();
   for (const t of ds.turnos)
-    acumular(acc, t, gxT.get(t.id) ?? [], pctChofer(ds, t.chofer_id));
+    acumular(acc, t, gxT.get(t.id) ?? [], pctTurno(ds, t));
   return acc;
 }
 
@@ -129,7 +147,7 @@ export function resumenRango(ds: Dataset, desde: string, hasta: string): Resumen
   const acc = vacio();
   for (const t of ds.turnos) {
     if (t.fecha < desde || t.fecha > hasta) continue;
-    acumular(acc, t, gxT.get(t.id) ?? [], pctChofer(ds, t.chofer_id));
+    acumular(acc, t, gxT.get(t.id) ?? [], pctTurno(ds, t));
   }
   return acc;
 }
@@ -139,7 +157,7 @@ export function resumenPorDia(ds: Dataset): { clave: string; resumen: Resumen }[
   const map = new Map<string, Resumen>();
   for (const t of ds.turnos) {
     const r = map.get(t.fecha) ?? vacio();
-    acumular(r, t, gxT.get(t.id) ?? [], pctChofer(ds, t.chofer_id));
+    acumular(r, t, gxT.get(t.id) ?? [], pctTurno(ds, t));
     map.set(t.fecha, r);
   }
   return [...map.entries()]
@@ -153,7 +171,7 @@ export function resumenPorMes(ds: Dataset): { clave: string; resumen: Resumen }[
   for (const t of ds.turnos) {
     const mes = t.fecha.slice(0, 7);
     const r = map.get(mes) ?? vacio();
-    acumular(r, t, gxT.get(t.id) ?? [], pctChofer(ds, t.chofer_id));
+    acumular(r, t, gxT.get(t.id) ?? [], pctTurno(ds, t));
     map.set(mes, r);
   }
   return [...map.entries()]
@@ -168,7 +186,7 @@ export function resumenPorTipoTurno(
   const map = new Map<string, Resumen>();
   for (const t of ds.turnos) {
     const r = map.get(t.tipo) ?? vacio();
-    acumular(r, t, gxT.get(t.id) ?? [], pctChofer(ds, t.chofer_id));
+    acumular(r, t, gxT.get(t.id) ?? [], pctTurno(ds, t));
     map.set(t.tipo, r);
   }
   return [...map.entries()].map(([clave, resumen]) => ({ clave, resumen }));
@@ -183,7 +201,7 @@ export function resumenPorChofer(
   for (const t of ds.turnos) {
     if (mes && t.fecha.slice(0, 7) !== mes) continue;
     const r = map.get(t.chofer_id) ?? vacio();
-    acumular(r, t, gxT.get(t.id) ?? [], pctChofer(ds, t.chofer_id));
+    acumular(r, t, gxT.get(t.id) ?? [], pctTurno(ds, t));
     map.set(t.chofer_id, r);
   }
   return [...map.entries()].map(([chofer_id, resumen]) => ({
